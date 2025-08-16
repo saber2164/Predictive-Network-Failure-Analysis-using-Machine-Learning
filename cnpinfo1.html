@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Predictive Network Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        .kpi-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            text-align: center;
+            border-left: 5px solid;
+        }
+        .status-ok { background-color: #D1FAE5; color: #065F46; border-left-color: #10B981; }
+        .status-failure { background-color: #FEE2E2; color: #991B1B; border-left-color: #EF4444; }
+        .status-error { background-color: #FEF3C7; color: #92400E; border-left-color: #FBBF24; }
+        .result-box { transition: all 0.5s ease-in-out; transform: scale(0.95); opacity: 0; }
+        .result-box.show { transform: scale(1); opacity: 1; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-[#F94144] mb-2">Live Predictive Network Dashboard</h1>
+            <p class="text-xl md:text-2xl text-gray-600">Interactive Analysis and Real-Time Link Failure Prediction</p>
+        </header>
+
+        <!-- Section 1: Live Predictor -->
+        <section id="live-predictor" class="mb-16 max-w-2xl mx-auto">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-center mb-4 text-[#577590]">Real-Time Predictor</h2>
+                <form id="prediction-form" class="space-y-6">
+                    <div>
+                        <label for="throughput" class="text-sm font-medium text-gray-700">Throughput (Mbps)</label>
+                        <input type="number" id="throughput" name="throughput" step="any" required class="mt-1 block w-full px-4 py-2 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:ring-[#F94144] focus:border-[#F94144] transition" placeholder="e.g., 5.2">
+                    </div>
+                    <div>
+                        <label for="delay" class="text-sm font-medium text-gray-700">Delay (s)</label>
+                        <input type="number" id="delay" name="delay" step="any" required class="mt-1 block w-full px-4 py-2 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:ring-[#F94144] focus:border-[#F94144] transition" placeholder="e.g., 0.8">
+                    </div>
+                    <button type="submit" id="predict-button" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#F94144] hover:bg-[#d93336] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F94144] transition-transform transform hover:scale-105">
+                        Predict Status
+                    </button>
+                </form>
+                <div id="result-container" class="pt-4">
+                    <div id="result-box" class="result-box p-4 rounded-md text-center">
+                        <p class="font-semibold text-lg" id="prediction-title">Prediction: <span id="prediction-result" class="font-bold"></span></p>
+                        <p id="prediction-confidence" class="text-sm"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Infographic -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <section id="model-performance" class="bg-white p-6 rounded-lg shadow-md md:col-span-2">
+                <h2 class="text-2xl font-bold mb-1 text-center text-[#90BE6D]">Live Model Performance</h2>
+                <p class="text-gray-600 mb-6 text-center">Statistics are fetched directly from the deployed model's backend.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <div class="kpi-card mb-4" style="border-color: #90BE6D;">
+                            <span id="accuracy-kpi" class="text-5xl font-extrabold text-[#90BE6D]">...</span>
+                            <p class="font-semibold mt-1">Cross-Validation Accuracy</p>
+                        </div>
+                        <div class="kpi-card" style="border-color: #43AA8B;">
+                            <span id="model-name-kpi" class="text-4xl font-extrabold text-[#43AA8B]">...</span>
+                            <p class="font-semibold mt-1">Classification Model</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="chart-container">
+                            <canvas id="performanceMetricsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="live-history" class="bg-white p-6 rounded-lg shadow-md md:col-span-2">
+                <h2 class="text-2xl font-bold mb-1 text-center text-[#F9A620]">Live Prediction History</h2>
+                 <p class="text-gray-600 mb-6 text-center">This chart plots the results of your real-time predictions.</p>
+                <div class="chart-container mx-auto" style="max-width: 800px; height: 400px; max-height: 450px;">
+                    <canvas id="predictionHistoryChart"></canvas>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        let performanceMetricsChart, predictionHistoryChart;
+        const predictionHistory = {
+            ok: [],
+            failure: []
+        };
+
+        const commonChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { family: "'Inter', sans-serif", size: 12 }, color: '#4b5563' }},
+                tooltip: {
+                    backgroundColor: '#1f2937', titleFont: { size: 14, weight: 'bold' }, bodyFont: { size: 12 },
+                    padding: 10, cornerRadius: 4, displayColors: true
+                }
+            }
+        };
+        
+        const setupPerformanceChart = (stats) => {
+            const ctx = document.getElementById('performanceMetricsChart').getContext('2d');
+            performanceMetricsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Precision', 'Recall', 'F1-Score'],
+                    datasets: [
+                        { label: 'FAILURE Class', data: Object.values(stats.metrics.failure), backgroundColor: '#F94144', borderRadius: 4 },
+                        { label: 'OK Class', data: Object.values(stats.metrics.ok), backgroundColor: '#90BE6D', borderRadius: 4 }
+                    ]
+                },
+                options: { ...commonChartOptions,
+                    scales: { y: { beginAtZero: true, max: 1, grid: { color: '#e5e7eb' }, ticks: { color: '#4b5563' }},
+                              x: { grid: { display: false }, ticks: { color: '#4b5563' }}
+                    },
+                    plugins: { ...commonChartOptions.plugins, title: { display: true, text: 'Model Evaluation Metrics', font: { size: 16, weight: 'bold' }, color: '#374151', padding: { top: 10, bottom: 10 }}}
+                }
+            });
+        };
+
+        const setupHistoryChart = () => {
+             const ctx = document.getElementById('predictionHistoryChart').getContext('2d');
+             predictionHistoryChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: 'OK Prediction', data: predictionHistory.ok, backgroundColor: '#43AA8B', pointRadius: 6, pointHoverRadius: 8 },
+                        { label: 'FAILURE Prediction', data: predictionHistory.failure, backgroundColor: '#F94144', pointRadius: 6, pointHoverRadius: 8 }
+                    ]
+                },
+                options: { ...commonChartOptions,
+                    scales: {
+                        x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Delay (s)', color: '#374151', font: { weight: 'bold' }}},
+                        y: { title: { display: true, text: 'Throughput (Mbps)', color: '#374151', font: { weight: 'bold' }}}
+                    },
+                    plugins: { ...commonChartOptions.plugins, tooltip: { ...commonChartOptions.plugins.tooltip, callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            label += `(Delay: ${context.parsed.x}, Throughput: ${context.parsed.y})`;
+                            return label;
+                        }
+                    }}}
+                }
+             });
+        };
+
+        const fetchModelStats = async () => {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/stats');
+                if (!response.ok) throw new Error('Failed to fetch model stats');
+                const stats = await response.json();
+                
+                document.getElementById('accuracy-kpi').textContent = `${(stats.cross_validation_accuracy * 100).toFixed(1)}%`;
+                document.getElementById('model-name-kpi').textContent = stats.model_name;
+                
+                if(performanceMetricsChart) performanceMetricsChart.destroy();
+                setupPerformanceChart(stats);
+
+            } catch (error) {
+                console.error("Error fetching stats:", error);
+                document.getElementById('accuracy-kpi').textContent = 'N/A';
+                document.getElementById('model-name-kpi').textContent = 'Error';
+            }
+        };
+
+        document.getElementById('prediction-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const resultBox = document.getElementById('result-box');
+            const predictButton = document.getElementById('predict-button');
+            const titleText = document.getElementById('prediction-title');
+            const resultText = document.getElementById('prediction-result');
+            const confidenceText = document.getElementById('prediction-confidence');
+
+            predictButton.disabled = true;
+            predictButton.textContent = 'Predicting...';
+
+            const throughput = parseFloat(document.getElementById('throughput').value);
+            const delay = parseFloat(document.getElementById('delay').value);
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ throughput: throughput, delay: delay }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server responded with status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                titleText.innerHTML = 'Prediction: <span id="prediction-result" class="font-bold"></span>';
+                document.getElementById('prediction-result').textContent = data.prediction;
+                confidenceText.textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+                resultBox.className = `result-box p-4 rounded-md text-center show ${data.prediction === 'OK' ? 'status-ok' : 'status-failure'}`;
+                
+                // Update history chart
+                const newPoint = { x: data.input.delay, y: data.input.throughput };
+                if (data.prediction === 'OK') {
+                    predictionHistory.ok.push(newPoint);
+                } else {
+                    predictionHistory.failure.push(newPoint);
+                }
+                predictionHistoryChart.update();
+
+            } catch (error) {
+                console.error('Prediction Error:', error);
+                titleText.textContent = 'Error';
+                confidenceText.textContent = 'Could not connect to the model server. Is it running?';
+                resultBox.className = 'result-box p-4 rounded-md text-center status-error show';
+            } finally {
+                predictButton.disabled = false;
+                predictButton.textContent = 'Predict Status';
+            }
+        });
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchModelStats();
+            setupHistoryChart();
+        });
+    </script>
+</body>
+</html>
