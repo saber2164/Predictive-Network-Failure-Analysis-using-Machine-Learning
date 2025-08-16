@@ -3,7 +3,22 @@ The proactive identification of potential network link failures is a critical ch
 The primary objective is to build a complete pipeline, starting from data synthesis and culminating in a user-facing application that provides actionable intelligence.
 
 The project is architected as a four-stage pipeline, where the output of each stage serves as the input for the next. This modular design ensures a clear separation of concerns and facilitates independent development and testing of each component.
-Data Generation (tcp-realtime-logger1.cc): An ns-3 simulation generates a rich dataset by modeling a point-to-point network link under various conditions. It logs key performance indicators (KPIs) like throughput and delay to a CSV file.
-Model Training (predict4.py): A Python script consumes the generated CSV data. It preprocesses the data, trains a Random Forest classifier, evaluates its performance using rigorous metrics, and serializes the trained model into a .joblib file for deployment.
-Backend API (app.py): A Flask web server loads the serialized model and exposes a /predict REST API endpoint. This backend service acts as the brain of the operation, serving predictions on demand.
-Frontend Interface (cnp.html): A standard HTML and JavaScript web page provides a user-friendly form. It captures user input for network metrics, communicates with the backend API, and displays the model's prediction in an intuitive, color-coded format.
+1. Data Generation (tcp-realtime-logger1.cc): An ns-3 simulation generates a rich dataset by modeling a point-to-point network link under various conditions. It logs key performance indicators (KPIs) like throughput and delay to a CSV file.
+2. Model Training (predict4.py): A Python script consumes the generated CSV data. It preprocesses the data, trains a Random Forest classifier, evaluates its performance using rigorous metrics, and serializes the trained model into a .joblib file for deployment.
+3. Backend API (app1.py): A Flask web server loads the serialized model and exposes a /predict REST API endpoint. This backend service acts as the brain of the operation, serving predictions on demand.
+4. Frontend Interface (cnpinfo1.html): A standard HTML and JavaScript web page provides a user-friendly form. It captures user input for network metrics, communicates with the backend API, and displays the model's prediction in an intuitive, color-coded format.
+
+TCP Protocols used in the project:
+1. TcpTahoe 
+2. TcpReno
+3. TcpNewReno
+4. TcpVegas
+5. TcpWestwood
+
+
+
+
+Future work:
+1. Implement more protocols
+2. Simulate real time traffic of a network
+3. Improve the machine learning model
